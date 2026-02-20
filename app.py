@@ -14,26 +14,38 @@ def get_stream():
         data = request.get_json()
         video_url = data.get('url')
         
-        # إعدادات متقدمة لتخطي حماية يوتيوب
+        # إعدادات متقدمة جداً للتمويه وتخطي الحظر
         ydl_opts = {
-            'format': 'best',
+            'format': 'best[ext=mp4]/best', # ضمان صيغة مدعومة
             'quiet': True,
             'no_warnings': True,
-            'source_address': '0.0.0.0', # إجبار استخدام IPv4
-            'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                'Accept': '*/*',
-                'Accept-Language': 'en-US,en;q=0.5',
-            }
+            'nocheckcertificate': True,
+            'ignoreerrors': False,
+            'logtostderr': False,
+            'add_header': [
+                'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept-Language: en-US,en;q=0.5',
+            ],
+            # التمويه كأنه متصفح حقيقي
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # محاولة جلب البيانات مع تخطي القيود
             info = ydl.extract_info(video_url, download=False)
-            return jsonify({'url': info['url']})
+            if 'url' in info:
+                return jsonify({'url': info['url']})
+            else:
+                # لو الرابط مطلعش مباشرة، نجربه من الـ formats
+                formats = info.get('formats', [])
+                for f in formats:
+                    if f.get('acodec') != 'none' and f.get('vcodec') != 'none':
+                        return jsonify({'url': f['url']})
+                
+        return jsonify({'error': 'Could not find a valid stream'}), 404
 
     except Exception as e:
-        # طباعة الخطأ في سجلات السيرفر عشان نعرف المشكلة فين
-        print(f"Error: {str(e)}")
+        print(f"Internal Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
