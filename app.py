@@ -14,15 +14,23 @@ def get_stream():
         data = request.get_json()
         video_url = data.get('url')
         
+        # إعدادات سريعة جداً وبدون تعقيدات
         ydl_opts = {
-            'format': 'best[ext=mp4]/best',
+            'format': 'best',
             'quiet': True,
             'no_warnings': True,
+            'skip_download': True,
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # استخراج البيانات الأساسية فقط
             info = ydl.extract_info(video_url, download=False)
-            return jsonify({'url': info['url']})
+            # التأكد من وجود رابط صالح
+            stream_url = info.get('url') or info.get('formats', [{}])[0].get('url')
+            
+            if stream_url:
+                return jsonify({'url': stream_url})
+            return jsonify({'error': 'No URL found'}), 404
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
