@@ -14,10 +14,17 @@ def get_stream():
         data = request.get_json()
         video_url = data.get('url')
         
+        # إعدادات متقدمة لتخطي حماية يوتيوب
         ydl_opts = {
             'format': 'best',
             'quiet': True,
             'no_warnings': True,
+            'source_address': '0.0.0.0', # إجبار استخدام IPv4
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                'Accept': '*/*',
+                'Accept-Language': 'en-US,en;q=0.5',
+            }
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -25,6 +32,8 @@ def get_stream():
             return jsonify({'url': info['url']})
 
     except Exception as e:
+        # طباعة الخطأ في سجلات السيرفر عشان نعرف المشكلة فين
+        print(f"Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
