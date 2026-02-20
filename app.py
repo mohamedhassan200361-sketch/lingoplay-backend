@@ -14,18 +14,22 @@ def get_stream():
         data = request.get_json()
         video_url = data.get('url')
         
-        # إعدادات سريعة جداً وبدون تعقيدات
         ydl_opts = {
             'format': 'best',
             'quiet': True,
             'no_warnings': True,
-            'skip_download': True,
+            'nocheckcertificate': True,
+            # محاولة تخطي الحظر الجغرافي
+            'geo_bypass': True,
+            'geo_bypass_country': 'US', # جرب تخليه US أو SA (السعودية) لو الفيديو عربي
+            'add_header': [
+                'Accept-Language: en-US,en;q=0.5',
+            ],
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # استخراج البيانات الأساسية فقط
             info = ydl.extract_info(video_url, download=False)
-            # التأكد من وجود رابط صالح
             stream_url = info.get('url') or info.get('formats', [{}])[0].get('url')
             
             if stream_url:
